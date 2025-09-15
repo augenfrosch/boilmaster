@@ -51,7 +51,7 @@ async fn main() -> anyhow::Result<()> {
 	let asset = Arc::new(bm_asset::Service::new(data.clone()));
 	let read = Arc::new(bm_read::Read::new(config.read));
 	let schema = Arc::new(
-		bm_schema::Provider::new(config.schema, data.clone())
+		bm_schema::Provider::new(config.schema, data.clone(), version.clone())
 			.context("failed to create schema provider")?,
 	);
 	let search = Arc::new(
