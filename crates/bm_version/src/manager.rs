@@ -58,6 +58,7 @@ pub struct Manager {
 
 	versions: RwLock<HashMap<VersionKey, Version>>,
 	names: RwLock<HashMap<String, VersionKey>>,
+	defined_schema: RwLock<HashMap<VersionKey, String>>,
 
 	channel: broadcast::Sender<VersionMessage>,
 }
@@ -82,6 +83,7 @@ impl Manager {
 			repositories: config.repositories,
 
 			versions: Default::default(),
+			defined_schema: Default::default(),
 			names: Default::default(),
 
 			channel: sender,
@@ -134,6 +136,20 @@ impl Manager {
 		Some(names)
 	}
 
+	// Get the defined schema for a given version key.
+	pub fn defined_schema(&self, key: VersionKey) -> Option<String> {
+		// Make sure the version is actually known to exist, to distinguish between an unknown key and a key with no names.
+		if !self.versions.read().expect("poisoned").contains_key(&key) {
+			return None;
+		}
+
+		self.defined_schema
+			.read()
+			.expect("poisoned")
+			.get(&key)
+			.cloned()
+	}
+
 	/// Set whether the specified version is banned. Banned versions will be
 	/// omitted from version manager behavior until unbanned.
 	pub async fn set_banned(&self, key: VersionKey, banned: bool) -> Result<()> {
@@ -163,6 +179,23 @@ impl Manager {
 			let mut names = self.names.write().expect("poisoned");
 			names.retain(|_, value| *value != key);
 			names.extend(new_names.into_iter().map(|name| (name.to_string(), key)));
+		}
+		self.persist_metadata().await?;
+		Ok(())
+	}
+
+	/// Set the defined schema for the specified version.
+	pub async fn set_defined_schema(
+		&self,
+		key: VersionKey,
+		new_defined_schema: String,
+	) -> Result<()> {
+		{
+			let mut defined_schema = self.defined_schema.write().expect("poisoned");
+			defined_schema.retain(|schema_version_key, _| *schema_version_key != key);
+			if !new_defined_schema.is_empty() {
+				defined_schema.insert(key, new_defined_schema);
+			}
 		}
 		self.persist_metadata().await?;
 		Ok(())
@@ -340,6 +373,18 @@ impl Manager {
 			names.insert(name, key);
 		}
 
+		let mut defined_schema = self.defined_schema.write().expect("poisoned");
+
+		for (key, schema) in metadata.defined_schema {
+			if !versions.contains_key(&key) {
+				tracing::warn!(%key, schema, "unknown key for defined schema");
+				continue;
+			}
+
+			tracing::debug!(%key, schema, "version with defined schema");
+			defined_schema.insert(key, schema);
+		}
+
 		// Hydration is complete - broadcast the version list.
 		let keys = versions.keys().copied().collect::<Vec<_>>();
 		let _ = self.channel.send(VersionMessage::Hydrate(keys));
@@ -400,6 +445,14 @@ impl Manager {
 				.clone()
 				.into_iter()
 				.collect(),
+
+			defined_schema: self
+				.defined_schema
+				.read()
+				.expect("poisoned")
+				.clone()
+				.into_iter()
+				.collect(),
 		};
 
 		let path = self.metadata_path();
@@ -427,6 +480,7 @@ impl Manager {
 struct PersistedMetadata {
 	versions: Vec<VersionKey>,
 	names: BTreeMap<String, VersionKey>,
+	defined_schema: BTreeMap<VersionKey, String>,
 }
 
 fn open_config_read(path: impl AsRef<Path>) -> Result<Option<fs::File>> {

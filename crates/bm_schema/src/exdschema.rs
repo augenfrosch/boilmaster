@@ -19,6 +19,7 @@ pub struct Config {
 
 pub struct ExdSchema {
 	data: Arc<bm_data::Data>,
+	version: Arc<bm_version::Manager>,
 
 	provider: exdschema::Provider,
 
@@ -26,7 +27,11 @@ pub struct ExdSchema {
 }
 
 impl ExdSchema {
-	pub fn new(config: Config, data: Arc<bm_data::Data>) -> Result<Self> {
+	pub fn new(
+		config: Config,
+		data: Arc<bm_data::Data>,
+		version: Arc<bm_version::Manager>,
+	) -> Result<Self> {
 		let provider = exdschema::Provider::with()
 			.remote(config.remote)
 			.directory(config.directory)
@@ -35,6 +40,7 @@ impl ExdSchema {
 
 		Ok(Self {
 			data,
+			version,
 			provider,
 			default: config.default,
 		})
@@ -91,7 +97,10 @@ impl ExdSchema {
 		schema_version: Option<&str>,
 		version_key: VersionKey,
 	) -> Result<exdschema::Specifier> {
-		let schema_version = schema_version.unwrap_or(&self.default);
+		let defined_schema = self.version.defined_schema(version_key);
+		let schema_version = schema_version
+			.or(defined_schema.as_deref())
+			.unwrap_or(&self.default);
 
 		// NOTE: The choice of `:` as the version specifier is very intentional -
 		// it's an invalid character in git commit revs. Given the syntax for exds1

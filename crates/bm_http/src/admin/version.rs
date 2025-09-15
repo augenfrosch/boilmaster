@@ -48,6 +48,10 @@ async fn get_version(
 		.names(version_key)
 		.context("unknown version")?;
 
+	let defined_schema = version_service
+		.defined_schema(version_key)
+		.unwrap_or_default();
+
 	// Patches are stored in oldest-first order for IW, which is lovely in code
 	// and horrible for reading. Given this is ostensibly the reading bit of the
 	// application, fix that.
@@ -76,6 +80,12 @@ async fn get_version(
 							}
 						};
 						small { "comma separated" }
+					}
+
+					label {
+						"define schema"
+						input type="text" id="defined_schema" name="defined_schema" value=(defined_schema);
+						small { "leave empty to remove" }
 					}
 
 					label {
@@ -121,6 +131,8 @@ struct VersionPostRequest {
 	names: String,
 	// Will only be set if checked.
 	ban: Option<bool>,
+	// Will be removed if empty
+	defined_schema: String,
 }
 
 #[debug_handler(state = HttpState)]
@@ -135,6 +147,11 @@ async fn post_version(
 
 	let banned = request.ban.is_some();
 	version.set_banned(version_key, banned).await?;
+
+	let defined_schema = request.defined_schema;
+	version
+		.set_defined_schema(version_key, defined_schema)
+		.await?;
 
 	Ok(Redirect::to(&uri.to_string()))
 }

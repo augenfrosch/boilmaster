@@ -42,14 +42,18 @@ pub struct Provider {
 }
 
 impl Provider {
-	pub fn new(config: Config, data: Arc<bm_data::Data>) -> Result<Self> {
+	pub fn new(
+		config: Config,
+		data: Arc<bm_data::Data>,
+		versions: Arc<bm_version::Manager>,
+	) -> Result<Self> {
 		// TODO: at the moment this will hard fail if any source fails - should i make sources soft fail?
 		Ok(Self {
 			default: config.default,
 			update_interval: config.interval,
 			sources: HashMap::from([(
 				"exdschema",
-				boxed(exdschema::ExdSchema::new(config.exdschema, data)?),
+				boxed(exdschema::ExdSchema::new(config.exdschema, data, versions)?),
 			)]),
 		})
 	}
