@@ -20,6 +20,7 @@ struct VersionInfo {
 	key: VersionKey,
 	patch: String,
 	names: Vec<String>,
+	defined_schema: Option<String>,
 	banned: bool,
 }
 
@@ -44,6 +45,7 @@ async fn versions(
 			key,
 			patch,
 			names: version_service.names(key).context("missing version")?,
+			defined_schema: version_service.defined_schema(key),
 			banned: version.ban_time.is_some(),
 		})
 	};
@@ -64,6 +66,7 @@ async fn versions(
 					tr {
 						th { "key" }
 						th { "names" }
+						th { "schema" }
 						th { "banned" }
 						th { "patch" }
 					}
@@ -85,6 +88,11 @@ async fn versions(
 									@if index > 0 { ", " }
 									(name)
 								}
+							}
+
+							td {
+								@if let Some(defined_schema) = version.defined_schema { (defined_schema) }
+								@else { "default" }
 							}
 
 							td {
