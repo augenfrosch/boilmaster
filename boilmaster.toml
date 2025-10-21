@@ -35,20 +35,20 @@ entry.fields.exdschema = "*"
 entry.transient.exdschema = "*"
 
 [read.language]
-default = "en"
-# This default configuration is set up for the global game client, which does not ship Chinese or Korean data.
-exclude = ["chs", "cht", "kr"]
+default = "chs"
+# This configuration is set up for the Chinese game client, which does not seem to ship data for any other language.
+exclude = ["ja", "en", "de", "fr", "kr", "cht"]
 
 [version]
 interval = 3600 # 1 hour
 directory = "versions"
 repositories = [
-  "4e9a232b", # ffxiv
-  "6b936f08", # ex1 (hw)
-  "f29a3eb2", # ex2 (stb)
-  "859d0e24", # ex3 (shb)
-  "1bf99b87", # ex4 (ew)
-  "6cfeab11", # ex5 (dt)
+  "c38effbc", # ffxiv
+  "77420d17", # ex1 (hw)
+  "ee4b5cad", # ex2 (stb)
+  "994c6c3b", # ex3 (shb)
+  "0728f998", # ex4 (ew)
+  "702fc90e", # ex5 (dt)
 ]
 
 [version.thaliak]
@@ -57,11 +57,11 @@ endpoint = "https://thaliak.xiv.dev/graphql/2022-08-14"
 # Thaliak bugged out and failed to link between the last delta patch, and the history patches, at 7.0.
 # This is just a manual specification of those links to restore the patch chain.
 [version.thaliak.overrides]
-4e9a232b = { "2024.05.31.0000.0000" = "H2024.05.31.0000.0000z" }
-6b936f08 = { "2024.05.31.0000.0000" = "H2024.05.31.0000.0000d" }
-f29a3eb2 = { "2024.05.31.0000.0000" = "H2024.05.31.0000.0000e" }
-859d0e24 = { "2024.05.31.0000.0000" = "H2024.05.31.0000.0000g" }
-1bf99b87 = { "2024.05.31.0000.0000" = "H2024.05.31.0000.0000i" }
+c38effbc = { "2024.09.09.0000.0000" = "H2024.09.09.0000.0000z" }
+77420d17 = { "2024.08.27.0002.0000" = "H2024.08.27.0002.0000c" }
+ee4b5cad = { "2024.08.27.0003.0000" = "H2024.08.27.0003.0000e" }
+994c6c3b = { "2024.09.09.0000.0000" = "H2024.09.09.0000.0000f" }
+0728f998 = { "2024.09.09.0000.0000" = "H2024.09.09.0000.0000g" }
 
 [version.patch]
 directory = "patches"
