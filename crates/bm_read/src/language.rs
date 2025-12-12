@@ -56,6 +56,7 @@ impl FromStr for LanguageString {
 			"chs" => Language::ChineseSimplified,
 			"cht" => Language::ChineseTraditional,
 			"kr" => Language::Korean,
+			"tc" => Language::TraditionalChinese,
 			other => other
 				.strip_prefix("unk")
 				.and_then(|id| id.parse::<u8>().ok())
