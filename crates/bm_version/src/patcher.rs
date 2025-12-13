@@ -54,7 +54,7 @@ impl Patcher {
 		repository: &str,
 		thaliak_patch: thaliak::Patch,
 	) -> Result<version::Patch> {
-		let patch_path = self.patch_path(repository, &thaliak_patch.name);
+		let patch_path = self.patch_path(repository, &thaliak_patch.version_string);
 
 		// TODO: It seems wasteful to call this hundreds of times every update when it'll do something less than 10 times ever.
 		let repository_directory = patch_path
@@ -111,7 +111,7 @@ impl Patcher {
 		thaliak_patch: thaliak::Patch,
 		patch_path: PathBuf,
 	) -> Result<version::Patch> {
-		let patch_name = thaliak_patch.name.clone();
+		let patch_name = thaliak_patch.version_string.clone();
 
 		// If we need to fetch the patch, wait for a permit then spin off a task to handle the download.
 		if self.should_fetch_patch(&thaliak_patch, &patch_path)? {
@@ -150,7 +150,7 @@ impl Patcher {
 		// If there's a size mismatch, we should re-fetch (likely a partial download).
 		if metadata.len() != patch.size {
 			tracing::warn!(
-			  patch = %patch.name,
+			  patch = %patch.version_string,
 			  expected = patch.size,
 			  got = metadata.len(),
 			  "size mismatch, will re-fetch"
@@ -163,7 +163,7 @@ impl Patcher {
 	}
 }
 
-#[tracing::instrument(level = "info", skip_all, fields(url = patch.url))]
+#[tracing::instrument(level = "info", skip_all, fields(url = patch.remote_url))]
 async fn fetch_patch(client: reqwest::Client, patch: &thaliak::Patch, path: &Path) -> Result<()> {
 	tracing::info!("fetching patch");
 
@@ -174,12 +174,12 @@ async fn fetch_patch(client: reqwest::Client, patch: &thaliak::Patch, path: &Pat
 
 	// Initiate the request for the patch file. If there's a non-success status,
 	// we've got an issue and should fail fast.
-	let mut response = client.get(&patch.url).send().await?.error_for_status()?;
+	let mut response = client.get(&patch.remote_url).send().await?.error_for_status()?;
 
 	// If there's a mismatch on content-length, there's something wrong with this url.
 	let content_length = response
 		.content_length()
-		.ok_or_else(|| anyhow::anyhow!("no content-length supplied for {}", patch.url))?;
+		.ok_or_else(|| anyhow::anyhow!("no content-length supplied for {}", patch.remote_url))?;
 
 	if content_length != patch.size {
 		anyhow::bail!(
